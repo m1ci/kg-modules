@@ -28,7 +28,7 @@ export default async function mount(el, context) {
 
   const [triples, distributions] =
     await Promise.all([
-      fetchTriples(databus_endpoint, artifact),
+      fetchTriples(moss_endpoint, artifact),
       fetchDistributions(databus_endpoint, artifact)
     ]);
 
