@@ -4,7 +4,7 @@ export default async function mount(el, context) {
   // CONFIG
   // =====================================
 
-  const endpoint = context.endpoint;
+  const moss_endpoint = context.moss_endpoint;
 
   // -------------------------------------
   // OPTIONAL CONFIGURATION
@@ -59,7 +59,7 @@ export default async function mount(el, context) {
   // =====================================
 
   const raw =
-    await fetchSparql(endpoint, query);
+    await fetchSparql(moss_endpoint, query);
 
   // =====================================
   // TRANSFORM
