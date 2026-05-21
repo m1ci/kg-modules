@@ -1,0 +1,6 @@
+{
+  "id": "kg-hello-world",
+  "name": "Hello World Module",
+  "description": "Minimal test module for KG plugin system",
+  "entry": "./index.js"
+}

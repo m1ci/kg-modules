@@ -1,0 +1,8 @@
+{
+  "id": "kg-evolution",
+  "name": "KG Evolution",
+  "description": "Visualizes knowledge graph growth over versions",
+  "entry": "./index.js",
+  "requires": ["versions"],
+  "dependencies": ["https://cdn.jsdelivr.net/npm/chart.js"]
+}
