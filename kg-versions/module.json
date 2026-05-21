@@ -1,0 +1,6 @@
+{
+  "id": "kg-versions",
+  "name": "KG Versions",
+  "description": "Displays downloadable knowledge graph versions and metadata",
+  "entry": "./index.js"
+}
