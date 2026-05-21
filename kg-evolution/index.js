@@ -29,7 +29,7 @@ export default async function mount(el, context) {
   // =====================================
 
   el.innerHTML = `
-    <h2>Knowledge Graph Evolution</h2>
+    <h2>${context.kgName || "unknown"} Knowledge Graph Evolution</h2>
 
     <p style="
       color:#555;
