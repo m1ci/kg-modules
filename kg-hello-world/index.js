@@ -13,7 +13,7 @@ export default function mount(el, context) {
 
       <p><strong>KG ID:</strong> ${context.kgId || "unknown"}</p>
 
-      <p><strong>Endpoint:</strong> ${context.endpoint || "not provided"}</p>
+      <p><strong>Endpoint:</strong> ${context.moss_endpoint || "not provided"}</p>
     </div>
   `;
 }
