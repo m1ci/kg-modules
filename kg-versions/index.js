@@ -5,6 +5,7 @@ export default async function mount(el, context) {
   // --------------------------------------------------
 
   const databus_endpoint = context.databus_endpoint;
+  const moss_endpoint = context.moss_endpoint;
 
   const artifact = context.artifact;
 
@@ -60,6 +61,7 @@ export default async function mount(el, context) {
 async function fetchTriples(endpoint, artifact) {
 
   const query = `
+
     PREFIX void: <http://rdfs.org/ns/void#>
 
     SELECT ?version ?triples WHERE {
