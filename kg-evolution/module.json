@@ -1,8 +1,9 @@
 {
   "id": "kg-evolution",
   "name": "KG Evolution",
-  "description": "Visualizes knowledge graph growth over versions",
+  "description": "Visualizes the evolution of a knowledge graph over time using RDF triple counts.",
   "entry": "./index.js",
-  "requires": ["versions"],
-  "dependencies": ["https://cdn.jsdelivr.net/npm/chart.js"]
+  "dependencies": [
+    "https://cdn.jsdelivr.net/npm/chart.js"
+  ]
 }
