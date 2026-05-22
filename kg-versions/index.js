@@ -213,7 +213,7 @@ function sortAsc(data) {
 function renderTable(el, data, artifact) {
 
   el.innerHTML = `
-    <h2>KG Versions</h2>
+    <h2>${context.kgName || "unknown"} KG Versions</h2>
 
     <p class="section-description">
       Browse available releases including dataset sizes,
