@@ -11,18 +11,21 @@ export default async function mount(el, context) {
   // -------------------------------------
 
   // allows individual KGs to override query
-  const query =
-    context.queryTriples ||
+  const query =`
+  PREFIX void: <http://rdfs.org/ns/void#>
 
-    `
-    PREFIX void: <http://rdfs.org/ns/void#>
+  SELECT ?version ?triples WHERE {
 
-    SELECT ?version ?triples WHERE {
+    ?version void:triples ?triples .
 
-      ?version void:triples ?triples .
-
-    }
-    `;
+    FILTER(
+      STRSTARTS(
+        STR(?version),
+        "${context.artifact}"
+      )
+    )
+  }
+  `;
 
   // =====================================
   // INITIAL UI
