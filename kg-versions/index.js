@@ -50,7 +50,7 @@ export default async function mount(el, context) {
   // RENDER
   // --------------------------------------------------
 
-  renderTable(el, newestFirst, artifact);
+  renderTable(el, newestFirst, artifact, context);
 }
 
 
@@ -210,7 +210,7 @@ function sortAsc(data) {
 // RENDER TABLE
 // ====================================================
 
-function renderTable(el, data, artifact) {
+function renderTable(el, data, artifact, context) {
 
   el.innerHTML = `
     <h2>${context.kgName || "unknown"} KG Versions</h2>
