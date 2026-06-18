@@ -35,7 +35,7 @@ ORDER BY ?versionNumber
     <h2>${context.kgName || "unknown"} Knowledge Graph Evolution</h2>
 
     <p style="color:#555; line-height:1.7; margin-bottom:24px;">
-      This visualization illustrates the evolution of the knowledge graph by tracking the size of published versions.
+      This visualization shows the evolution of the knowledge graph size across versions.
     </p>
 
     <div style="width:100%; overflow-x:auto;">
@@ -54,40 +54,78 @@ ORDER BY ?versionNumber
   const raw = await fetchSparql(databus_endpoint, query);
 
   // =====================================
+  // SIZE FORMATTING (AUTO UNIT SCALE)
+  // =====================================
+
+  function formatSize(bytes) {
+
+    const KB = 1024;
+    const MB = KB * 1024;
+    const GB = MB * 1024;
+
+    if (bytes >= GB) {
+      return { value: bytes / GB, unit: "GB" };
+    }
+
+    if (bytes >= MB) {
+      return { value: bytes / MB, unit: "MB" };
+    }
+
+    if (bytes >= KB) {
+      return { value: bytes / KB, unit: "KB" };
+    }
+
+    return { value: bytes, unit: "B" };
+  }
+
+  // =====================================
   // TRANSFORM
   // =====================================
 
-  const data = raw.map(r => ({
-    version: r.versionNumber.value,
-    size: Number(r.totalSize.value)
-  }));
+  const data = raw.map(r => {
+    const bytes = Number(r.totalSize.value);
+    const formatted = formatSize(bytes);
+
+    return {
+      version: r.versionNumber.value,
+      size: formatted.value,
+      unit: formatted.unit
+    };
+  });
 
   // =====================================
-  // SORT (chronological, safe for YYYY-MM-DD or version strings)
+  // SORT CHRONOLOGICALLY
   // =====================================
 
   data.sort((a, b) =>
     a.version.localeCompare(b.version)
   );
 
+  // detect best unit for label (based on max value)
+  const max = Math.max(...data.map(d => d.size));
+  const unit =
+    max >= 1024 ? "KB/MB/GB" : "B";
+
   // =====================================
-  // RENDER CHART
+  // CHART
   // =====================================
 
   new Chart(canvas, {
+
     type: "line",
 
     data: {
       labels: data.map(d => d.version),
 
       datasets: [{
-        label: "Total Size",
+        label: `Total Size (${unit})`,
         data: data.map(d => d.size),
         tension: 0.2
       }]
     },
 
     options: {
+
       responsive: true,
 
       plugins: {
@@ -97,6 +135,7 @@ ORDER BY ?versionNumber
       },
 
       scales: {
+
         x: {
           title: {
             display: true,
@@ -107,7 +146,7 @@ ORDER BY ?versionNumber
         y: {
           title: {
             display: true,
-            text: "Size (bytes)"
+            text: `Size (${unit})`
           }
         }
       }
@@ -121,6 +160,7 @@ ORDER BY ?versionNumber
 // =====================================
 
 async function fetchSparql(endpoint, query) {
+
   const url =
     endpoint +
     "?query=" +
@@ -139,6 +179,7 @@ async function fetchSparql(endpoint, query) {
 // =====================================
 
 function ensureChartJS() {
+
   if (window.Chart) return Promise.resolve();
 
   return new Promise((resolve, reject) => {
