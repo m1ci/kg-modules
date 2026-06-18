@@ -16,7 +16,6 @@ PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
 SELECT ?versionNumber (SUM(xsd:integer(?size)) AS ?totalSize)
 WHERE {
-
   ?version databus:group <${group}> ;
            dct:hasVersion ?versionNumber ;
            dcat:distribution ?distribution .
@@ -55,26 +54,33 @@ ORDER BY ?versionNumber
   const raw = await fetchSparql(databus_endpoint, query);
 
   if (!raw.length) {
-    el.innerHTML += `<p>No data available.</p>`;
+    el.innerHTML += "<p>No data available.</p>";
     return;
   }
 
   // =====================================
-  // DETERMINE BEST UNIT FOR ENTIRE DATASET
+  // ANALYZE SIZE RANGE
   // =====================================
 
-  const maxBytes = Math.max(
-    ...raw.map(r => Number(r.totalSize.value))
-  );
+  const sizesBytes = raw.map(r => Number(r.totalSize.value));
+
+  const minBytes = Math.min(...sizesBytes);
+  const maxBytes = Math.max(...sizesBytes);
+  const diffBytes = maxBytes - minBytes;
 
   const KB = 1024;
   const MB = KB * 1024;
   const GB = MB * 1024;
 
-  let divisor = 1;
-  let unit = "B";
+  let divisor;
+  let unit;
 
-  if (maxBytes >= GB) {
+  // If variation is less than 1 GB,
+  // show MB so differences remain visible.
+  if (maxBytes >= GB && diffBytes < GB) {
+    divisor = MB;
+    unit = "MB";
+  } else if (maxBytes >= GB) {
     divisor = GB;
     unit = "GB";
   } else if (maxBytes >= MB) {
@@ -83,6 +89,9 @@ ORDER BY ?versionNumber
   } else if (maxBytes >= KB) {
     divisor = KB;
     unit = "KB";
+  } else {
+    divisor = 1;
+    unit = "B";
   }
 
   // =====================================
@@ -94,16 +103,25 @@ ORDER BY ?versionNumber
     size: Number(r.totalSize.value) / divisor
   }));
 
-  // =====================================
-  // SORT CHRONOLOGICALLY
-  // =====================================
-
   data.sort((a, b) =>
     a.version.localeCompare(b.version)
   );
 
   // =====================================
-  // RENDER CHART
+  // Y AXIS RANGE
+  // =====================================
+
+  const minSize = Math.min(...data.map(d => d.size));
+  const maxSize = Math.max(...data.map(d => d.size));
+
+  const padding =
+    Math.max(
+      (maxSize - minSize) * 0.1,
+      maxSize * 0.01
+    );
+
+  // =====================================
+  // CHART
   // =====================================
 
   new Chart(canvas, {
@@ -115,7 +133,11 @@ ORDER BY ?versionNumber
       datasets: [{
         label: `Total Size (${unit})`,
         data: data.map(d => d.size),
-        tension: 0.2
+
+        tension: 0.2,
+
+        pointRadius: 4,
+        pointHoverRadius: 6
       }]
     },
 
@@ -126,15 +148,17 @@ ORDER BY ?versionNumber
         legend: {
           display: true
         },
+
         tooltip: {
           callbacks: {
-            label: (context) =>
-              `${context.parsed.y.toFixed(2)} ${unit}`
+            label: (ctx) =>
+              `${ctx.parsed.y.toFixed(3)} ${unit}`
           }
         }
       },
 
       scales: {
+
         x: {
           title: {
             display: true,
@@ -147,8 +171,14 @@ ORDER BY ?versionNumber
             display: true,
             text: `Size (${unit})`
           },
+
+          beginAtZero: false,
+
+          min: minSize - padding,
+          max: maxSize + padding,
+
           ticks: {
-            callback: value => Number(value).toFixed(1)
+            callback: value => Number(value).toFixed(2)
           }
         }
       }
@@ -195,7 +225,8 @@ function ensureChartJS() {
 
     const script = document.createElement("script");
 
-    script.src = "https://cdn.jsdelivr.net/npm/chart.js";
+    script.src =
+      "https://cdn.jsdelivr.net/npm/chart.js";
 
     script.onload = resolve;
     script.onerror = reject;
