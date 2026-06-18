@@ -12,6 +12,7 @@ export default async function mount(el, context) {
 PREFIX dcat: <http://www.w3.org/ns/dcat#>
 PREFIX databus: <https://dataid.dbpedia.org/databus#>
 PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
 
 SELECT ?versionNumber (SUM(xsd:integer(?size)) AS ?totalSize)
 WHERE {
@@ -32,7 +33,7 @@ ORDER BY ?versionNumber
   // =====================================
 
   el.innerHTML = `
-    <h2>${context.kgName || "unknown"} Knowledge Graph Evolution</h2>
+    <h2>${context.kgName || "Unknown"} Knowledge Graph Evolution</h2>
 
     <p style="color:#555; line-height:1.7; margin-bottom:24px;">
       This visualization shows the evolution of the knowledge graph size across versions.
@@ -53,45 +54,45 @@ ORDER BY ?versionNumber
 
   const raw = await fetchSparql(databus_endpoint, query);
 
-  // =====================================
-  // SIZE FORMATTING (AUTO UNIT SCALE)
-  // =====================================
-
-  function formatSize(bytes) {
-
-    const KB = 1024;
-    const MB = KB * 1024;
-    const GB = MB * 1024;
-
-    if (bytes >= GB) {
-      return { value: bytes / GB, unit: "GB" };
-    }
-
-    if (bytes >= MB) {
-      return { value: bytes / MB, unit: "MB" };
-    }
-
-    if (bytes >= KB) {
-      return { value: bytes / KB, unit: "KB" };
-    }
-
-    return { value: bytes, unit: "B" };
+  if (!raw.length) {
+    el.innerHTML += `<p>No data available.</p>`;
+    return;
   }
 
   // =====================================
-  // TRANSFORM
+  // DETERMINE BEST UNIT FOR ENTIRE DATASET
   // =====================================
 
-  const data = raw.map(r => {
-    const bytes = Number(r.totalSize.value);
-    const formatted = formatSize(bytes);
+  const maxBytes = Math.max(
+    ...raw.map(r => Number(r.totalSize.value))
+  );
 
-    return {
-      version: r.versionNumber.value,
-      size: formatted.value,
-      unit: formatted.unit
-    };
-  });
+  const KB = 1024;
+  const MB = KB * 1024;
+  const GB = MB * 1024;
+
+  let divisor = 1;
+  let unit = "B";
+
+  if (maxBytes >= GB) {
+    divisor = GB;
+    unit = "GB";
+  } else if (maxBytes >= MB) {
+    divisor = MB;
+    unit = "MB";
+  } else if (maxBytes >= KB) {
+    divisor = KB;
+    unit = "KB";
+  }
+
+  // =====================================
+  // TRANSFORM DATA
+  // =====================================
+
+  const data = raw.map(r => ({
+    version: r.versionNumber.value,
+    size: Number(r.totalSize.value) / divisor
+  }));
 
   // =====================================
   // SORT CHRONOLOGICALLY
@@ -101,17 +102,11 @@ ORDER BY ?versionNumber
     a.version.localeCompare(b.version)
   );
 
-  // detect best unit for label (based on max value)
-  const max = Math.max(...data.map(d => d.size));
-  const unit =
-    max >= 1024 ? "KB/MB/GB" : "B";
-
   // =====================================
-  // CHART
+  // RENDER CHART
   // =====================================
 
   new Chart(canvas, {
-
     type: "line",
 
     data: {
@@ -125,17 +120,21 @@ ORDER BY ?versionNumber
     },
 
     options: {
-
       responsive: true,
 
       plugins: {
         legend: {
           display: true
+        },
+        tooltip: {
+          callbacks: {
+            label: (context) =>
+              `${context.parsed.y.toFixed(2)} ${unit}`
+          }
         }
       },
 
       scales: {
-
         x: {
           title: {
             display: true,
@@ -147,6 +146,9 @@ ORDER BY ?versionNumber
           title: {
             display: true,
             text: `Size (${unit})`
+          },
+          ticks: {
+            callback: value => Number(value).toFixed(1)
           }
         }
       }
@@ -168,6 +170,11 @@ async function fetchSparql(endpoint, query) {
     "&format=json";
 
   const res = await fetch(url);
+
+  if (!res.ok) {
+    throw new Error(`SPARQL request failed: ${res.status}`);
+  }
+
   const json = await res.json();
 
   return json.results.bindings;
@@ -180,13 +187,19 @@ async function fetchSparql(endpoint, query) {
 
 function ensureChartJS() {
 
-  if (window.Chart) return Promise.resolve();
+  if (window.Chart) {
+    return Promise.resolve();
+  }
 
   return new Promise((resolve, reject) => {
+
     const script = document.createElement("script");
+
     script.src = "https://cdn.jsdelivr.net/npm/chart.js";
+
     script.onload = resolve;
     script.onerror = reject;
+
     document.head.appendChild(script);
   });
 }
