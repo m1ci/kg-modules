@@ -94,8 +94,8 @@ function renderTable(el, data, context) {
         <tr>
           <th>Version</th>
           <th>Artifact</th>
-          <th>Download</th>
           <th>Size</th>
+          <th>Download</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -133,14 +133,14 @@ function renderTable(el, data, context) {
 
         <td>${file.artifact}</td>
 
-        <td>
-          <a href="${file.downloadLink}" target="_blank">
-            ${getFileName(file.downloadLink)}
-          </a>
-        </td>
-
         <td style="text-align:right">
           ${formatBytes(file.size)}
+        </td>
+
+        <td>
+          <a href="${file.downloadLink}" target="_blank">
+            Download
+          </a>
         </td>
 
       `;
