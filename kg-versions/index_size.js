@@ -77,90 +77,119 @@ async function fetchSparql(endpoint, query) {
 
 
 // ====================================================
-// TABLE RENDERING
+// TABLE + PAGINATION
 // ====================================================
 
 function renderTable(el, data, context) {
 
-  el.innerHTML = `
-    <h2>${context.kgName || "Unknown"} KG Versions</h2>
+  const PAGE_SIZE = 100;
+  let currentPage = 1;
 
-    <p class="section-description">
-      Browse available releases including dataset sizes and download links.
-    </p>
+  const totalPages = () =>
+    Math.max(1, Math.ceil(data.length / PAGE_SIZE));
 
-    <table>
-      <thead>
-        <tr>
-          <th>Version</th>
-          <th>Artifact</th>
-          <th>Size</th>
-          <th>Download</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  `;
+  function render() {
 
-  const tbody = el.querySelector("tbody");
+    const start = (currentPage - 1) * PAGE_SIZE;
+    const pageData = data.slice(start, start + PAGE_SIZE);
 
-  // Group by version
-  const grouped = {};
+    el.innerHTML = `
+      <h2>${context.kgName || "Unknown"} KG Versions</h2>
 
-  data.forEach(item => {
-    if (!grouped[item.version]) {
-      grouped[item.version] = [];
-    }
-    grouped[item.version].push(item);
-  });
+      <p class="section-description">
+        Browse available releases including dataset sizes and download links.
+      </p>
 
-  // Render grouped rows
-  Object.entries(grouped).forEach(([version, files]) => {
+      <table>
+        <thead>
+          <tr>
+            <th>Version</th>
+            <th>Artifact</th>
+            <th>Size</th>
+            <th>Download</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
 
-    files.forEach((file, index) => {
+      <div class="pagination" style="margin-top: 12px; display:flex; gap:10px; align-items:center;">
+        <button id="prevBtn" ${currentPage === 1 ? "disabled" : ""}>Previous</button>
+        <span>Page ${currentPage} / ${totalPages()}</span>
+        <button id="nextBtn" ${currentPage === totalPages() ? "disabled" : ""}>Next</button>
+      </div>
+    `;
 
-      const tr = document.createElement("tr");
+    const tbody = el.querySelector("tbody");
 
-      tr.innerHTML = `
+    // Group only page data
+    const grouped = {};
 
-        ${
-          index === 0
-            ? `<td rowspan="${files.length}">
-                 <strong>${version}</strong>
-               </td>`
-            : ""
-        }
+    pageData.forEach(item => {
+      if (!grouped[item.version]) {
+        grouped[item.version] = [];
+      }
+      grouped[item.version].push(item);
+    });
 
-        <td>${file.artifact}</td>
+    Object.entries(grouped).forEach(([version, files]) => {
 
-        <td style="text-align:right">
-          ${formatBytes(file.size)}
-        </td>
+      files.forEach((file, index) => {
 
-        <td>
-          <a href="${file.downloadLink}" target="_blank">
-            Download
-          </a>
-        </td>
+        const tr = document.createElement("tr");
 
-      `;
+        tr.innerHTML = `
 
-      tbody.appendChild(tr);
+          ${
+            index === 0
+              ? `<td rowspan="${files.length}">
+                   <strong>${version}</strong>
+                 </td>`
+              : ""
+          }
+
+          <td>${file.artifact}</td>
+
+          <td style="text-align:right">
+            ${formatBytes(file.size)}
+          </td>
+
+          <td>
+            <a href="${file.downloadLink}" target="_blank">
+              Download
+            </a>
+          </td>
+
+        `;
+
+        tbody.appendChild(tr);
+
+      });
 
     });
 
-  });
+    // Events
+    el.querySelector("#prevBtn").onclick = () => {
+      if (currentPage > 1) {
+        currentPage--;
+        render();
+      }
+    };
 
+    el.querySelector("#nextBtn").onclick = () => {
+      if (currentPage < totalPages()) {
+        currentPage++;
+        render();
+      }
+    };
+  }
+
+  render();
 }
 
 
 // ====================================================
 // HELPERS
 // ====================================================
-
-function getFileName(url) {
-  return url.split("/").pop();
-}
 
 function formatBytes(bytes) {
 
@@ -171,5 +200,5 @@ function formatBytes(bytes) {
 
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return (bytes / Math.pow(k, i)).toFixed(1) + " " + sizes[i];
+  return (bytes / Math.pow(bytes, i)).toFixed(1) + " " + sizes[i];
 }
