@@ -4,7 +4,7 @@ export default async function mount(el, context) {
   const group = context.group;
 
   el.innerHTML = `
-    <h2>${context.kgName || "Unknown"} KG Versions</h2>
+    <h2>${context.kgName || "Unknown"} KG Releases</h2>
 
     <p class="section-description">
       Browse available releases including dataset sizes and download links.
