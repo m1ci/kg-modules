@@ -1,7 +1,7 @@
 export default async function mount(el, context) {
 
   const databus_endpoint = context.databus_endpoint;
-  const artifact = context.artifact;
+  const group = context.group;
 
   el.innerHTML = `
     <h2>${context.kgName || "Unknown"} KG Versions</h2>
@@ -13,44 +13,46 @@ export default async function mount(el, context) {
     <p>Loading versions...</p>
   `;
 
-  const versions = await fetchVersions(databus_endpoint, artifact);
+  const files = await fetchVersions(databus_endpoint, group);
 
-  versions.sort((a, b) =>
-    new Date(a.version.replace(/\./g, "-")) -
-    new Date(b.version.replace(/\./g, "-"))
-  );
-
-  renderTable(el, versions.reverse(), artifact, context);
+  renderTable(el, files, context);
 }
 
 
 // ====================================================
-// FETCH VERSIONS
+// FETCH DATA FROM SPARQL
 // ====================================================
 
-async function fetchVersions(endpoint, artifact) {
+async function fetchVersions(endpoint, group) {
 
   const query = `
-    PREFIX dcat: <http://www.w3.org/ns/dcat#>
-    PREFIX databus: <https://dataid.dbpedia.org/databus#>
+PREFIX dcat: <http://www.w3.org/ns/dcat#>
+PREFIX databus: <https://dataid.dbpedia.org/databus#>
+PREFIX dct: <http://purl.org/dc/terms/>
 
-    SELECT ?version ?size ?downloadURL WHERE {
+SELECT DISTINCT ?versionNumber ?artifact ?artifactLabel ?downloadLink ?size
+WHERE {
 
-      ?version databus:artifact <${artifact}> .
+  ?version databus:group <${group}> ;
+           databus:artifact ?artifact ;
+           dct:hasVersion ?versionNumber ;
+           dcat:distribution ?distribution .
 
-      ?version dcat:distribution ?dist .
+  ?artifact databus:name ?artifactLabel .
 
-      ?dist dcat:byteSize ?size ;
-            dcat:downloadURL ?downloadURL .
-    }
-  `;
+  ?distribution databus:file ?downloadLink ;
+                dcat:byteSize ?size .
+}
+ORDER BY DESC(?versionNumber) ?artifactLabel
+`;
 
   const rows = await fetchSparql(endpoint, query);
 
   return rows.map(r => ({
-    version: extractVersion(r.version.value),
-    size: Number(r.size.value),
-    downloadURL: r.downloadURL.value
+    version: r.versionNumber.value,
+    artifact: r.artifactLabel.value,
+    downloadLink: r.downloadLink.value,
+    size: Number(r.size.value)
   }));
 }
 
@@ -75,19 +77,10 @@ async function fetchSparql(endpoint, query) {
 
 
 // ====================================================
-// VERSION EXTRACTOR
+// TABLE RENDERING
 // ====================================================
 
-function extractVersion(uri) {
-  return uri.split("/").pop();
-}
-
-
-// ====================================================
-// RENDER TABLE
-// ====================================================
-
-function renderTable(el, data, artifact, context) {
+function renderTable(el, data, context) {
 
   el.innerHTML = `
     <h2>${context.kgName || "Unknown"} KG Versions</h2>
@@ -97,48 +90,86 @@ function renderTable(el, data, artifact, context) {
     </p>
 
     <table>
-
       <thead>
         <tr>
           <th>Version</th>
-          <th>Size (bytes)</th>
+          <th>Artifact</th>
           <th>Download</th>
+          <th>Size</th>
         </tr>
       </thead>
-
       <tbody></tbody>
-
     </table>
   `;
 
   const tbody = el.querySelector("tbody");
 
-  data.forEach(d => {
+  // Group by version
+  const grouped = {};
 
-    const databusURL = `${artifact}/${d.version}`;
-
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-      <td>
-        ${d.version}
-        <br>
-        <a href="${databusURL}" target="_blank">
-          View on DBpedia Databus
-        </a>
-      </td>
-
-      <td>
-        ${d.size.toLocaleString()}
-      </td>
-
-      <td>
-        <a href="${d.downloadURL}" target="_blank">
-          Download
-        </a>
-      </td>
-    `;
-
-    tbody.appendChild(tr);
+  data.forEach(item => {
+    if (!grouped[item.version]) {
+      grouped[item.version] = [];
+    }
+    grouped[item.version].push(item);
   });
+
+  // Render grouped rows
+  Object.entries(grouped).forEach(([version, files]) => {
+
+    files.forEach((file, index) => {
+
+      const tr = document.createElement("tr");
+
+      tr.innerHTML = `
+
+        ${
+          index === 0
+            ? `<td rowspan="${files.length}">
+                 <strong>${version}</strong>
+               </td>`
+            : ""
+        }
+
+        <td>${file.artifact}</td>
+
+        <td>
+          <a href="${file.downloadLink}" target="_blank">
+            ${getFileName(file.downloadLink)}
+          </a>
+        </td>
+
+        <td style="text-align:right">
+          ${formatBytes(file.size)}
+        </td>
+
+      `;
+
+      tbody.appendChild(tr);
+
+    });
+
+  });
+
+}
+
+
+// ====================================================
+// HELPERS
+// ====================================================
+
+function getFileName(url) {
+  return url.split("/").pop();
+}
+
+function formatBytes(bytes) {
+
+  if (!bytes || bytes === 0) return "0 B";
+
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB", "TB"];
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return (bytes / Math.pow(k, i)).toFixed(1) + " " + sizes[i];
 }
