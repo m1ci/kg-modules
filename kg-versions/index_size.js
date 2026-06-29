@@ -88,6 +88,18 @@ function renderTable(el, data, context) {
   const totalPages = () =>
     Math.max(1, Math.ceil(data.length / PAGE_SIZE));
 
+
+  function paginationControls() {
+    return `
+      <div class="pagination" style="margin: 12px 0; display:flex; gap:10px; align-items:center;">
+        <button id="prevBtn" ${currentPage === 1 ? "disabled" : ""}>Previous</button>
+        <span>Page ${currentPage} / ${totalPages()}</span>
+        <button id="nextBtn" ${currentPage === totalPages() ? "disabled" : ""}>Next</button>
+      </div>
+    `;
+  }
+
+
   function render() {
 
     const start = (currentPage - 1) * PAGE_SIZE;
@@ -99,6 +111,8 @@ function renderTable(el, data, context) {
       <p class="section-description">
         Browse available releases including dataset sizes and download links.
       </p>
+
+      ${paginationControls()}
 
       <table>
         <thead>
@@ -112,16 +126,12 @@ function renderTable(el, data, context) {
         <tbody></tbody>
       </table>
 
-      <div class="pagination" style="margin-top: 12px; display:flex; gap:10px; align-items:center;">
-        <button id="prevBtn" ${currentPage === 1 ? "disabled" : ""}>Previous</button>
-        <span>Page ${currentPage} / ${totalPages()}</span>
-        <button id="nextBtn" ${currentPage === totalPages() ? "disabled" : ""}>Next</button>
-      </div>
+      ${paginationControls()}
     `;
 
     const tbody = el.querySelector("tbody");
 
-    // Group only page data
+    // Group by version
     const grouped = {};
 
     pageData.forEach(item => {
@@ -167,20 +177,27 @@ function renderTable(el, data, context) {
 
     });
 
-    // Events
-    el.querySelector("#prevBtn").onclick = () => {
-      if (currentPage > 1) {
-        currentPage--;
-        render();
-      }
-    };
+    // Bind events (both top & bottom buttons exist)
+    const prevBtns = el.querySelectorAll("#prevBtn");
+    const nextBtns = el.querySelectorAll("#nextBtn");
 
-    el.querySelector("#nextBtn").onclick = () => {
-      if (currentPage < totalPages()) {
-        currentPage++;
-        render();
-      }
-    };
+    prevBtns.forEach(btn => {
+      btn.onclick = () => {
+        if (currentPage > 1) {
+          currentPage--;
+          render();
+        }
+      };
+    });
+
+    nextBtns.forEach(btn => {
+      btn.onclick = () => {
+        if (currentPage < totalPages()) {
+          currentPage++;
+          render();
+        }
+      };
+    });
   }
 
   render();
@@ -200,5 +217,5 @@ function formatBytes(bytes) {
 
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return (bytes / Math.pow(bytes, i)).toFixed(1) + " " + sizes[i];
+  return (bytes / Math.pow(k, i)).toFixed(1) + " " + sizes[i];
 }
