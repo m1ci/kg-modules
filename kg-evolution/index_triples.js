@@ -8,10 +8,10 @@ export default async function mount(el, context) {
   // =====================================
 
   el.innerHTML = `
-    <h2>${context.kgName || "Knowledge Graph Evolution"}</h2>
+    <h2>${context.kgName  || "Unknown"} "Knowledge Graph Evolution"}</h2>
 
     <p style="color:#555; line-height:1.7; margin-bottom:24px;">
-      Total RDF triples per version.
+This visualization shows how the size of the knowledge graph (measured in triples) evolves across different versions.
     </p>
 
     <div style="width:100%; overflow-x:auto;">
