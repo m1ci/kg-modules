@@ -24,7 +24,7 @@ This visualization shows how the size of the knowledge graph (measured in triple
   await ensureChartJS();
 
   // =====================================
-  // SPARQL QUERY (YOUR QUERY, FIXED GROUP)
+  // SPARQL QUERY (YOUR QUERY, FIXED GROUP) 
   // =====================================
 
   const query = `
