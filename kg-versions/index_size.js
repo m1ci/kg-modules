@@ -106,10 +106,10 @@ function renderTable(el, data, context) {
     const pageData = data.slice(start, start + PAGE_SIZE);
 
     el.innerHTML = `
-      <h2>${context.kgName || "Unknown"} KG Versions</h2>
+      <h2>${context.kgName || "Unknown"} Knowledge Graph Releases</h2>
 
       <p class="section-description">
-        Browse available releases including dataset sizes and download links.
+      Browse available releases including dataset sizes and download links.
       </p>
 
       ${paginationControls()}
