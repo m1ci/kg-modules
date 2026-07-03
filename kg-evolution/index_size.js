@@ -32,7 +32,7 @@ ORDER BY ?versionNumber
   // =====================================
 
   el.innerHTML = `
-    <h2>${context.kgName || "Unknown"} Knowledge Graph Evolution</h2>
+    <h2>${context.kgName || "Unknown"} Knowledge Graph Evolution (Size)</h2>
 
     <p style="color:#555; line-height:1.7; margin-bottom:24px;">
       This visualization shows how the knowledge graph size evolves across versions, measured by the size of the data dumps.
