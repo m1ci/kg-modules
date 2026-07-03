@@ -6,7 +6,7 @@ export default async function mount(el, context) {
 
   const databus_endpoint = context.databus_endpoint;
   const group = context.group;
-  const variant = context.variant; 
+  const variant = context.variant;
 
   const query = `
 PREFIX dcat: <http://www.w3.org/ns/dcat#>
